@@ -1,0 +1,54 @@
+Parameters:
+    apiKeySourceType:
+        # Read the API key from the X-API-Key header of a request
+        Type: string
+        Default: HEADER
+    apiName:
+        Type: string
+        Default: TestAndriy
+        # By default, RestApi supports only UTF-8-encoded text payloads
+        # We can add support for images or another binary types
+    BinaryMediaType1:
+        Type: String
+        Default: null
+    BinaryMediaType2:
+        Type: String
+        Default: null
+    # Body can be uploaded to S3 bucket in OpenAPI format, can use Swagger to generate 
+    body:
+        Type: string
+        Default: JSON
+    minimumCompressionSize:
+        Type: String
+Resources:
+    MyRestApi:
+        Type: AWS::ApiGateway::RestApi
+        Properties:
+            ApiKeySourceType: !Ref apiKeySourceType
+            BinaryMediaTypes:
+                - !Ref binaryMediaType1
+                - !Ref binaryMediaType2
+            #Body can be uploaded to S3 bucket in OpenAPI format, can use Swagger to generate 
+            Body: !Ref body
+            MinimumCompressionSize: !Ref minimumCompressionSize
+            Name: !Ref apiName
+ProxyResource:
+  Type: 'AWS::ApiGateway::Resource'
+  Properties:
+    RestApiId: !Ref LambdaSimpleProxy
+    ParentId: !GetAtt 
+      - LambdaSimpleProxy
+      - RootResourceId
+    PathPart: '{proxy+}'
+ProxyResourceANY:
+  Type: 'AWS::ApiGateway::Method'
+  Properties:
+    RestApiId: !Ref LambdaSimpleProxy
+    ResourceId: !Ref ProxyResource
+    HttpMethod: ANY
+    AuthorizationType: NONE
+    Integration:
+      Type: AWS_PROXY
+      IntegrationHttpMethod: POST
+      Uri: !Sub >-
+        arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaForSimpleProxy.Arn}/invocations
